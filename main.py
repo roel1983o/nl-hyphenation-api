@@ -51,14 +51,28 @@ def hyphenate_text(text: str) -> str:
         text
     )
 
-def hyphenate_ch_attribute(match):
-    original = match.group(1)
+def hyphenate_itext_tag(match):
+    full_tag = match.group(0)
+    fontsize = float(match.group(1))
+    ch_value = match.group(2)
 
-    decoded = html.unescape(original)
+    # Alleen bodytekst afbreken:
+    # exact FONTSIZE 10 of kleiner.
+    if fontsize > 10:
+        return full_tag
+
+    decoded = html.unescape(ch_value)
     hyphenated = hyphenate_text(decoded)
     escaped = xml_escape_attr(hyphenated)
 
-    return f'CH="{escaped}"'
+    return full_tag.replace(f'CH="{ch_value}"', f'CH="{escaped}"', 1)
+
+def hyphenate_sla_content(sla: str) -> str:
+    return re.sub(
+        r'<ITEXT\b[^>]*?FONTSIZE="([0-9.]+)"[^>]*?CH="([^"]*)"[^>]*/>',
+        hyphenate_itext_tag,
+        sla
+    )
 
 @app.get("/")
 def healthcheck():
@@ -72,12 +86,6 @@ def hyphenate(request: TextRequest):
 
 @app.post("/hyphenate-sla")
 def hyphenate_sla(request: SlaRequest):
-    new_sla = re.sub(
-        r'CH="([^"]*)"',
-        hyphenate_ch_attribute,
-        request.sla
-    )
-
     return {
-        "sla": new_sla
+        "sla": hyphenate_sla_content(request.sla)
     }
