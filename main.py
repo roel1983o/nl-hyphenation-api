@@ -6,7 +6,7 @@ import re
 app = FastAPI()
 
 dic = pyphen.Pyphen(lang="nl_NL")
-SOFT_HYPHEN = "."
+SOFT_HYPHEN = "\u00ad"
 
 class TextRequest(BaseModel):
     text: str
