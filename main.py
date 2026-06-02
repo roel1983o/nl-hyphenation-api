@@ -11,14 +11,33 @@ SOFT_HYPHEN = "\u00ad"
 class TextRequest(BaseModel):
     text: str
 
-def hyphenate_word(word: str) -> str:
+def should_skip_word(word: str) -> bool:
     if len(word) < 6:
+        return True
+
+    if any(char.isdigit() for char in word):
+        return True
+
+    if word.isupper():
+        return True
+
+    if "@" in word:
+        return True
+
+    if word.startswith(("http", "www")):
+        return True
+
+    return False
+
+def hyphenate_word(word: str) -> str:
+    if should_skip_word(word):
         return word
+
     return dic.inserted(word, hyphen=SOFT_HYPHEN)
 
 def hyphenate_text(text: str) -> str:
     return re.sub(
-        r"\b[A-Za-zÀ-ÿ]{6,}\b",
+        r"\b[A-Za-zÀ-ÿ][A-Za-zÀ-ÿ'-]{5,}\b",
         lambda match: hyphenate_word(match.group(0)),
         text
     )
